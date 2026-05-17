@@ -1,11 +1,13 @@
 package com.example.habit_bridge_demo.ui.navigation
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.habit_bridge_demo.ui.common.appContainer
 import com.example.habit_bridge_demo.ui.screens.auth.LoginScreen
 import com.example.habit_bridge_demo.ui.screens.auth.RegisterScreen
 import com.example.habit_bridge_demo.ui.screens.challenge.ChallengeDetailScreen
@@ -20,6 +22,16 @@ import com.example.habit_bridge_demo.ui.screens.splash.SplashScreen
 @Composable
 fun AppNavHost() {
     val nav = rememberNavController()
+    val container = appContainer()
+
+    LaunchedEffect(container) {
+        container.authSessionEvents.unauthorized.collect {
+            nav.navigate(Routes.LOGIN) {
+                popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(navController = nav, startDestination = Routes.SPLASH) {
 
@@ -103,6 +115,10 @@ fun AppNavHost() {
                     nav.navigate(Routes.participationPending(participationId)) {
                         popUpTo(Routes.PARTICIPATION_CONFIRM) { inclusive = true }
                     }
+                },
+                onOpenProfile = {
+                    container.tabSelectionEvents.requestTab(Routes.PROFILE)
+                    nav.popBackStack(Routes.MAIN, inclusive = false)
                 },
             )
         }

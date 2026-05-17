@@ -1,6 +1,7 @@
 package com.example.habit_bridge_demo.data.remote
 
 import com.example.habit_bridge_demo.BuildConfig
+import com.example.habit_bridge_demo.data.local.AuthSessionEvents
 import com.example.habit_bridge_demo.data.local.TokenStore
 import com.example.habit_bridge_demo.data.remote.api.AuthApi
 import com.example.habit_bridge_demo.data.remote.api.ChallengeApi
@@ -25,13 +26,16 @@ object NetworkModule {
         coerceInputValues = true
     }
 
-    fun buildRetrofit(tokenStore: TokenStore): Retrofit {
+    fun buildRetrofit(
+        tokenStore: TokenStore,
+        authSessionEvents: AuthSessionEvents,
+    ): Retrofit {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
             else HttpLoggingInterceptor.Level.NONE
         }
         val client = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenStore))
+            .addInterceptor(AuthInterceptor(tokenStore, authSessionEvents))
             .addInterceptor(logging)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
@@ -46,8 +50,11 @@ object NetworkModule {
     }
 }
 
-class ApiClient(tokenStore: TokenStore) {
-    private val retrofit = NetworkModule.buildRetrofit(tokenStore)
+class ApiClient(
+    tokenStore: TokenStore,
+    authSessionEvents: AuthSessionEvents,
+) {
+    private val retrofit = NetworkModule.buildRetrofit(tokenStore, authSessionEvents)
 
     val auth: AuthApi = retrofit.create(AuthApi::class.java)
     val users: UserApi = retrofit.create(UserApi::class.java)

@@ -1,6 +1,8 @@
 package com.example.habit_bridge_demo
 
 import android.content.Context
+import com.example.habit_bridge_demo.data.local.AuthSessionEvents
+import com.example.habit_bridge_demo.data.local.TabSelectionEvents
 import com.example.habit_bridge_demo.data.local.TokenStore
 import com.example.habit_bridge_demo.data.remote.ApiClient
 
@@ -9,5 +11,7 @@ import com.example.habit_bridge_demo.data.remote.ApiClient
  */
 class AppContainer(appContext: Context) {
     val tokenStore: TokenStore = TokenStore(appContext)
-    val api: ApiClient = ApiClient(tokenStore)
+    val authSessionEvents: AuthSessionEvents = AuthSessionEvents()
+    val tabSelectionEvents: TabSelectionEvents = TabSelectionEvents()
+    val api: ApiClient = ApiClient(tokenStore, authSessionEvents)
 }

@@ -14,15 +14,18 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.habit_bridge_demo.HabitBridgeApp
 import com.example.habit_bridge_demo.ui.screens.home.HomeScreen
 import com.example.habit_bridge_demo.ui.screens.participation.MyParticipationsScreen
 import com.example.habit_bridge_demo.ui.screens.profile.ProfileScreen
@@ -49,6 +52,18 @@ fun MainTabScaffold(
     val tabNav = rememberNavController()
     val backStackEntry by tabNav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+
+    val context = LocalContext.current
+    val container = (context.applicationContext as HabitBridgeApp).container
+    LaunchedEffect(Unit) {
+        container.tabSelectionEvents.requestedTab.collect { route ->
+            tabNav.navigate(route) {
+                popUpTo(tabNav.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {

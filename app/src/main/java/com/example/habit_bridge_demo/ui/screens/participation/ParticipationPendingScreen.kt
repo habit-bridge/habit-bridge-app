@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,15 +50,21 @@ fun ParticipationPendingScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(56.dp))
-            Spacer(Modifier.height(20.dp))
+            if (state.polling) {
+                CircularProgressIndicator(modifier = Modifier.size(56.dp))
+                Spacer(Modifier.height(20.dp))
+            }
             Text(
-                text = "서명을 확인하고 있어요",
+                text = if (state.timedOut) "확인이 지연되고 있어요" else "서명을 확인하고 있어요",
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Xaman에서 서명을 마치면 자동으로 진행됩니다. 최대 1분 정도 걸릴 수 있어요.",
+                text = if (state.timedOut) {
+                    "Xaman에서 서명을 이미 마치셨다면 잠시 후 ‘다시 확인’을 눌러주세요."
+                } else {
+                    "Xaman에서 서명을 마치면 자동으로 진행됩니다. 최대 2분 정도 걸릴 수 있어요."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -73,6 +80,13 @@ fun ParticipationPendingScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(12.dp))
+            }
+            if (state.timedOut) {
+                OutlinedButton(onClick = viewModel::retry) {
+                    Text("다시 확인")
+                }
+                Spacer(Modifier.height(4.dp))
             }
             TextButton(onClick = onBackground) {
                 Text("백그라운드에서 계속 진행")

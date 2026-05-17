@@ -25,6 +25,8 @@ data class ParticipationConfirmUiState(
     val signing: Boolean = false,
     val prepareResult: EscrowPrepareResponse? = null,
     val participationId: String? = null,
+    /** Server signalled XRPL_ADDRESS_REQUIRED — the user must set an XRPL address first. */
+    val needsXrplAddress: Boolean = false,
 )
 
 class ParticipationConfirmViewModel(
@@ -57,7 +59,7 @@ class ParticipationConfirmViewModel(
         val s = _state.value
         if (!s.acknowledged) return
         viewModelScope.launch {
-            _state.update { it.copy(signing = true, error = null) }
+            _state.update { it.copy(signing = true, error = null, needsXrplAddress = false) }
             try {
                 // 1) create participation
                 val p = apiCall {
@@ -71,9 +73,19 @@ class ParticipationConfirmViewModel(
                     it.copy(signing = false, participationId = p.id, prepareResult = prep)
                 }
             } catch (e: ApiException) {
-                _state.update { it.copy(signing = false, error = e.message) }
+                _state.update {
+                    it.copy(
+                        signing = false,
+                        error = e.message,
+                        needsXrplAddress = e.code == "XRPL_ADDRESS_REQUIRED",
+                    )
+                }
             }
         }
+    }
+
+    fun clearNeedsXrplAddress() {
+        _state.update { it.copy(needsXrplAddress = false, error = null) }
     }
 
     companion object {

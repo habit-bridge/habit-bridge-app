@@ -1,7 +1,6 @@
 package com.example.habit_bridge_demo.ui.screens.participation
 
-import android.content.Intent
-import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,25 +38,66 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.habit_bridge_demo.ui.components.ErrorBox
 import com.example.habit_bridge_demo.ui.components.LoadingBox
 import com.example.habit_bridge_demo.ui.components.PrimaryButton
+import com.example.habit_bridge_demo.util.XamanLauncher
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParticipationConfirmScreen(
     onBack: () -> Unit,
     onSigningStarted: (participationId: String) -> Unit,
+    onOpenProfile: () -> Unit,
     viewModel: ParticipationConfirmViewModel = viewModel(factory = ParticipationConfirmViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
+    if (state.needsXrplAddress) {
+        AlertDialog(
+            onDismissRequest = viewModel::clearNeedsXrplAddress,
+            title = { Text("XRPL 주소가 필요합니다") },
+            text = {
+                Text(
+                    "보증금을 예치하려면 먼저 마이페이지에서 본인 XRPL 주소를 등록해 주세요.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearNeedsXrplAddress()
+                    onOpenProfile()
+                }) { Text("프로필로 이동") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::clearNeedsXrplAddress) { Text("닫기") }
+            },
+        )
+    }
+
     LaunchedEffect(state.prepareResult, state.participationId) {
         val url = state.prepareResult?.xumm?.next?.always
         val pid = state.participationId
         if (url != null && pid != null) {
-            runCatching {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
+            val uuid = state.prepareResult?.xumm?.uuid
+                ?: XamanLauncher.extractUuid(url)
+            val uuidTag = uuid?.takeLast(8) ?: "(unknown)"
+
+            val result = XamanLauncher.open(context, url)
+            when (result) {
+                XamanLauncher.Result.LaunchedXaman -> { }
+                XamanLauncher.Result.LaunchedBrowser -> Toast.makeText(
+                    context,
+                    "Xaman 앱이 설치되어 있지 않아 브라우저로 열었습니다. payload …$uuidTag",
+                    Toast.LENGTH_LONG,
+                ).show()
+                XamanLauncher.Result.NoHandler -> Toast.makeText(
+                    context,
+                    "서명 페이지를 열 수 있는 앱이 없습니다.",
+                    Toast.LENGTH_LONG,
+                ).show()
+                XamanLauncher.Result.InvalidUrl -> Toast.makeText(
+                    context,
+                    "서명 URL이 올바르지 않습니다.",
+                    Toast.LENGTH_LONG,
+                ).show()
             }
             onSigningStarted(pid)
         } else if (url == null && pid != null) {

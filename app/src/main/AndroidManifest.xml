@@ -11,6 +11,11 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="xumm"/>
+        </intent>
+        <package android:name="com.xrpllabs.xumm"/>
     </queries>
 
     <application
